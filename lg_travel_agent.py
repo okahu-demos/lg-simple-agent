@@ -1,0 +1,95 @@
+# Enable Monocle Tracing
+from monocle_apptrace import setup_monocle_telemetry
+setup_monocle_telemetry(workflow_name = 'lg-travel-agent-simple', monocle_exporters_list = 'file,okahu')
+
+import asyncio
+import os
+import time
+from dotenv import load_dotenv
+from langchain_core.messages import HumanMessage, ToolMessage
+from langchain_openai import ChatOpenAI
+from langgraph.prebuilt import create_react_agent
+from langgraph_supervisor import create_supervisor
+from langchain_core.tools import tool
+from langchain_mcp_adapters.client import MultiServerMCPClient
+
+# Load environment variables from .env file
+load_dotenv()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+import logging
+logger = logging.getLogger(__name__)
+DEFAULT_PORT = 8007
+port = int(os.getenv("PORT", DEFAULT_PORT))
+
+# Global max output tokens (can be overridden via environment variable MAX_OUTPUT_TOKENS)
+MAX_OUTPUT_TOKENS = int(os.getenv("MAX_OUTPUT_TOKENS", "1000"))
+
+def model_factory():
+    """Create a ChatOpenAI model instance with the global max token setting."""
+    return ChatOpenAI(model="gpt-4o", max_tokens=MAX_OUTPUT_TOKENS)
+
+@tool("okahu_demo_lg_tool_book_hotel", description="Book a hotel for a stay")
+def book_hotel(hotel_name: str):
+    """Book a hotel"""
+    return f"Successfully booked a stay at {hotel_name}."
+
+@tool("okahu_demo_lg_tool_book_flight", description="Book a flight from one airport to another")
+def book_flight(from_airport: str, to_airport: str):
+    """Book a flight"""
+    return f"Successfully booked a flight from {from_airport} to {to_airport}."
+
+# Set up agents for travel booking
+async def setup_agents(return_all_agents: bool = False):
+
+    flight_assistant = create_react_agent(
+    model=model_factory(),
+        tools=[book_flight],
+        prompt="You are a flight booking assistant. You only handle flight booking. Just handle that part from what the user says, ignore other parts of the requests.",
+        name="okahu_demo_lg_agent_air_travel_assistant"
+    )
+
+    hotel_assistant = create_react_agent(
+    model=model_factory(),
+        tools=[book_hotel],
+        prompt="You are a hotel booking assistant. You only handle hotel booking. Book hotel if the user explicitly asks, just handle that part from what the user says, ignore other parts of the requests.",
+        name="okahu_demo_lg_agent_lodging_assistant"
+    )
+
+    supervisor = create_supervisor(
+        supervisor_name="okahu_demo_lg_agent_travel_supervisor",
+        agents=[flight_assistant, hotel_assistant],
+    model=model_factory(),
+        prompt=(
+            "You manage a hotel booking assistant and a"
+            "flight booking assistant. Assign work to them. Each assistant is skilled in their own area ONLY and cannot do other tasks. "
+        )
+    ).compile()
+
+    if return_all_agents:
+        return supervisor, flight_assistant, hotel_assistant
+    return supervisor
+
+# Run the agent with a user request
+async def run_agent(request: str):
+    try:
+        supervisor = await setup_agents()
+    except RuntimeError as exc:
+        print(exc)
+        return
+    chunk = await supervisor.ainvoke(
+        input={
+            "messages": [
+                {
+                    "role": "user",
+                    "content": request
+            }
+        ]
+    })
+    print(chunk["messages"][-1].content)
+    return chunk["messages"][-1].content
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.WARN)
+    request = input("\nI am a travel booking agent. How can I assist you with your travel plans? (You can ask me to book flights or hotels.): \n")
+    asyncio.run(run_agent(request))

@@ -1,5 +1,5 @@
-# Sample Agentic AI app built with LangGraph + OpenAI + MCP
-This repo includes a simple agentic AI app that provides a mock travel agent that books flights and hotels based on a user's ask and weather conditions at destination. This Python app is built with LangGraph agent framework, [OpenAI](https://platform.openai.com/overview) GPT-4o model and a mock MCP Server that illustrates how a simple multi-agent app with a remote tool works. 
+# Sample Agentic AI app built with LangGraph + OpenAI
+This repo includes a simple agentic AI app that provides a mock travel agent that books flights and hotels based on a user's ask and weather conditions at destination. This Python app is built with LangGraph agent framework, [OpenAI](https://platform.openai.com/overview) GPT-4o model. 
 
 Try this agent with different inputs to see where such a simple agent can fail and think about what changes to the code or prompts you need to make to iteratively make this app more functional. You can even use your favorite code gen copilot to help you. 
 
@@ -96,7 +96,7 @@ Now when you [run](#running-the-application) the agent again, it'll generate Mon
 
 ## Run tests in VS Code to QA agents locally
 
-Follow [README_testing.md](docs/README_testing.md) for the full testing workflow, including environment setup, VS Code Testing panel screenshots, and pytest commands for terminal runs. That guide also covers MCP server requirements and helpful tips for interpreting Monocle-generated traces during QA.
+Follow [README_testing.md](docs/README_testing.md) for the full testing workflow, including environment setup, VS Code Testing panel screenshots, and pytest commands for terminal runs. That guide also covers helpful tips for interpreting Monocle-generated traces during QA.
 
 ## Visualize traces, tests and evaluations run in the cloud
 

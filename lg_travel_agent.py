@@ -1,7 +1,3 @@
-# Enable Monocle Tracing
-from monocle_apptrace import setup_monocle_telemetry
-setup_monocle_telemetry(workflow_name = 'lg-travel-agent-simple', monocle_exporters_list = 'file,okahu')
-
 import asyncio
 import os
 import time
